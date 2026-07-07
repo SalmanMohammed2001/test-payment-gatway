@@ -18,6 +18,10 @@ public class PaymentProcessingException extends RuntimeException {
         this(message, 0, null, null);
     }
 
+    public PaymentProcessingException(String message, Throwable cause) {
+        this(message, 0, null, cause);
+    }
+
     public int getProviderHttpStatus() {
         return providerHttpStatus;
     }

@@ -31,6 +31,20 @@ cybersource:
   enable-log: ${CYBS_ENABLE_LOG:false}
   default-currency: ${CYBS_DEFAULT_CURRENCY:USD}
 
+# CyberSource Secure Acceptance — Hosted Checkout (form POST + HMAC signature).
+# Distinct from the REST credentials above; sourced from a Secure Acceptance profile.
+secure-acceptance:
+  profile-id: ${SA_PROFILE_ID:}
+  access-key: ${SA_ACCESS_KEY:}
+  secret-key: ${SA_SECRET_KEY:}
+  # Sandbox: https://testsecureacceptance.cybersource.com/pay
+  # Production: https://secureacceptance.cybersource.com/pay
+  pay-url: ${SA_PAY_URL:https://testsecureacceptance.cybersource.com/pay}
+  # Where the customer's browser is sent after the response is processed.
+  frontend-result-url: ${SA_FRONTEND_RESULT_URL:http://localhost:4200/checkout/result}
+  locale: ${SA_LOCALE:en}
+  default-currency: ${SA_DEFAULT_CURRENCY:USD}
+
 logging:
   level:
     com.exotic.payment: INFO

@@ -4,5 +4,6 @@ public enum TransactionType {
     AUTHORIZATION,
     SALE,
     CAPTURE,
-    REFUND
+    REFUND,
+    SECURE_ACCEPTANCE
 }
