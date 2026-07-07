@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: cybersource-payment
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:cybersource_payment}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:Salman123!}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    show-sql: false
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# CyberSource REST API credentials (HTTP Signature authentication).
+# Provide these via environment variables; never commit real secrets.
+cybersource:
+  authentication-type: http_signature
+  merchant-id: ${CYBS_MERCHANT_ID:}
+  merchant-key-id: ${CYBS_MERCHANT_KEY_ID:}
+  merchant-secret-key: ${CYBS_MERCHANT_SECRET_KEY:}
+  # Sandbox: apitest.cybersource.com | Production: api.cybersource.com
+  run-environment: ${CYBS_RUN_ENVIRONMENT:apitest.cybersource.com}
+  enable-log: ${CYBS_ENABLE_LOG:false}
+  default-currency: ${CYBS_DEFAULT_CURRENCY:USD}
+
+logging:
+  level:
+    com.exotic.payment: INFO
