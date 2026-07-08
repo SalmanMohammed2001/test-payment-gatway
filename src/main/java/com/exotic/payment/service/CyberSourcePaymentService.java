@@ -39,16 +39,32 @@ import com.exotic.payment.support.CurrencySupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class CyberSourcePaymentService {
 
     private static final Logger log = LoggerFactory.getLogger(CyberSourcePaymentService.class);
+
+    /** Transaction types that represent an original charge (not a follow-up capture/refund). */
+    private static final Set<TransactionType> CHARGE_TYPES =
+            EnumSet.of(TransactionType.AUTHORIZATION, TransactionType.SALE);
+
+    /**
+     * Charge outcomes that are safe to retry under the same reference. Anything
+     * else (AUTHORIZED, PENDING, CAPTURED, UNKNOWN, ...) is treated as an
+     * existing charge and returned as-is to avoid double-charging.
+     */
+    private static final Set<PaymentStatus> RETRYABLE_CHARGE_STATUSES =
+            EnumSet.of(PaymentStatus.FAILED, PaymentStatus.DECLINED);
 
     private final CyberSourceClientFactory clientFactory;
     private final PaymentTransactionRepository repository;
@@ -125,6 +141,18 @@ public class CyberSourcePaymentService {
                                              BigDecimal amount,
                                              String currency,
                                              boolean capture) {
+        // Idempotency: if this reference already has a charge that was not a
+        // terminal failure, return it instead of charging CyberSource again.
+        // Guards against a client retrying after a successful charge whose
+        // response it never received.
+        Optional<PaymentTransaction> existing = findExistingCharge(referenceCode);
+        if (existing.isPresent()) {
+            PaymentTransaction tx = existing.get();
+            log.info("Idempotent charge: returning existing transaction ref={} id={} status={}",
+                    referenceCode, tx.getCybersourceId(), tx.getStatus());
+            return tx;
+        }
+
         PtsV2PaymentsPost201Response response;
         try {
             response = createPaymentWithRetry(sdkRequest, referenceCode);
@@ -346,6 +374,7 @@ public class CyberSourcePaymentService {
         return repository.save(tx);
     }
 
+    @Transactional(readOnly = true)
     public List<PaymentTransaction> findByReference(String referenceCode) {
         List<PaymentTransaction> transactions =
                 repository.findByReferenceCodeOrderByCreatedAtDesc(referenceCode);
@@ -356,10 +385,21 @@ public class CyberSourcePaymentService {
         return transactions;
     }
 
+    @Transactional(readOnly = true)
     public PaymentTransaction findById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Transaction not found: " + id));
+    }
+
+    /**
+     * Returns an existing non-terminal-failure charge for the reference, if any.
+     * A DECLINED or FAILED prior attempt is excluded so it can be retried.
+     */
+    private Optional<PaymentTransaction> findExistingCharge(String referenceCode) {
+        return repository
+                .findFirstByReferenceCodeAndTransactionTypeInAndStatusNotInOrderByCreatedAtDesc(
+                        referenceCode, CHARGE_TYPES, RETRYABLE_CHARGE_STATUSES);
     }
 
     private Ptsv2paymentsOrderInformationBillTo buildBillTo(PaymentRequest request) {

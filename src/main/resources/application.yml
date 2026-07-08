@@ -32,8 +32,6 @@ cybersource:
     initial-backoff: 500
     max-backoff: 4000
 
-np
-
 # Secure Acceptance — Hosted Checkout (must match Business Center → Security tab).
 secure-acceptance:
   profile-id: ${SA_PROFILE_ID:36111A12-9725-45E8-B895-BA48CF15AA9E}

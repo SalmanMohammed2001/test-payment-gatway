@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,8 +24,13 @@ import java.time.Instant;
 @Table(
         name = "payment_transaction",
         indexes = {
-                @Index(name = "idx_reference_code", columnList = "reference_code"),
-                @Index(name = "idx_cybersource_id", columnList = "cybersource_id")
+                @Index(name = "idx_reference_code", columnList = "reference_code")
+        },
+        // A given CyberSource transaction id must map to exactly one row so a
+        // provider response can never be recorded twice. Failed attempts carry a
+        // null id (multiple nulls are permitted), so this does not affect them.
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_cybersource_id", columnNames = "cybersource_id")
         }
 )
 @Getter
