@@ -17,7 +17,7 @@ class SecureAcceptanceSignatureServiceTest {
             new SecureAcceptanceSignatureService(props(SECRET));
 
     private static SecureAcceptanceProperties props(String secret) {
-        return new SecureAcceptanceProperties("profile", "access", secret, null, null, null, null);
+        return new SecureAcceptanceProperties("profile", "access", secret, null, null, null, null, null);
     }
 
     private Map<String, String> sampleFields() {
@@ -28,7 +28,7 @@ class SecureAcceptanceSignatureServiceTest {
         f.put("signed_field_names",
                 "access_key,profile_id,transaction_uuid,signed_field_names,amount,currency");
         f.put("amount", "102.21");
-        f.put("currency", "USD");
+        f.put("currency", "LKR");
         return f;
     }
 

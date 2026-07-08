@@ -13,11 +13,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.exotic.payment.dto.CheckoutBillingDto;
+import com.exotic.payment.support.CurrencySupport;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,12 +38,6 @@ public class SecureAcceptanceService {
 
     private static final DateTimeFormatter SIGNED_DATE_TIME =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
-
-    /** Fields signed on the outbound checkout request, in signing order. */
-    private static final String SIGNED_FIELD_NAMES = String.join(",",
-            "access_key", "profile_id", "transaction_uuid", "signed_field_names",
-            "unsigned_field_names", "signed_date_time", "locale", "transaction_type",
-            "reference_number", "amount", "currency");
 
     private final SecureAcceptanceProperties properties;
     private final SecureAcceptanceSignatureService signatureService;
@@ -58,17 +57,17 @@ public class SecureAcceptanceService {
      */
     @Transactional
     public CheckoutResponse createCheckout(CheckoutRequest request) {
-        String currency = (request.currency() == null || request.currency().isBlank())
-                ? properties.defaultCurrency()
-                : request.currency();
+        String currency = CurrencySupport.resolve(request.currency());
         BigDecimal amount = request.amount().setScale(2, java.math.RoundingMode.HALF_UP);
         String transactionUuid = UUID.randomUUID().toString();
 
+        // Insertion order defines the signing order. "signed_field_names" is a
+        // placeholder here and filled in once every signed field is present.
         Map<String, String> fields = new LinkedHashMap<>();
         fields.put("access_key", properties.accessKey());
         fields.put("profile_id", properties.profileId());
         fields.put("transaction_uuid", transactionUuid);
-        fields.put("signed_field_names", SIGNED_FIELD_NAMES);
+        fields.put("signed_field_names", "");
         fields.put("unsigned_field_names", "");
         fields.put("signed_date_time", SIGNED_DATE_TIME.format(Instant.now()));
         fields.put("locale", properties.locale());
@@ -76,6 +75,11 @@ public class SecureAcceptanceService {
         fields.put("reference_number", request.referenceCode());
         fields.put("amount", amount.toPlainString());
         fields.put("currency", currency);
+        addBillingFields(fields, resolveBilling(request.billTo()));
+
+        // Every field we send must be listed in signed_field_names (or the request
+        // is rejected). Build it from the keys added so far, then sign.
+        fields.put("signed_field_names", String.join(",", fields.keySet()));
         fields.put("signature", signatureService.sign(fields));
 
         PaymentTransaction tx = new PaymentTransaction();
@@ -91,6 +95,10 @@ public class SecureAcceptanceService {
         log.info("Secure Acceptance checkout created ref={} uuid={} amount={} {}",
                 request.referenceCode(), transactionUuid, amount, currency);
         return new CheckoutResponse(properties.payUrl(), fields);
+    }
+
+    private CheckoutBillingDto resolveBilling(CheckoutBillingDto billTo) {
+        return billTo != null ? billTo : properties.resolvedDefaultBilling();
     }
 
     /**
@@ -111,6 +119,16 @@ public class SecureAcceptanceService {
         String transactionUuid = params.get("req_transaction_uuid");
         String referenceNumber = params.get("req_reference_number");
         String decision = params.get("decision");
+        String reasonCode = params.get("reason_code");
+
+        // Reason code 101 = one or more required fields are missing/invalid.
+        // CyberSource lists them as missingField_0..N / invalidField_0..N.
+        List<String> missingFields = collectIndexedFields(params, "missingField_");
+        List<String> invalidFields = collectIndexedFields(params, "invalidField_");
+        if (!missingFields.isEmpty() || !invalidFields.isEmpty()) {
+            log.warn("Secure Acceptance field errors ref={} reasonCode={} missing={} invalid={}",
+                    referenceNumber, reasonCode, missingFields, invalidFields);
+        }
 
         PaymentTransaction tx = repository.findFirstByCybersourceId(transactionUuid)
                 .orElseGet(() -> {
@@ -123,7 +141,9 @@ public class SecureAcceptanceService {
 
         tx.setStatus(mapDecision(decision));
         tx.setProviderStatus(decision);
-        tx.setProviderReason(truncate(params.get("message"), 255));
+        tx.setProviderReason(truncate(
+                buildProviderReason(reasonCode, params.get("message"), missingFields, invalidFields),
+                255));
         // Replace our correlation uuid with the real CyberSource transaction id.
         if (params.get("transaction_id") != null) {
             tx.setCybersourceId(params.get("transaction_id"));
@@ -187,5 +207,72 @@ public class SecureAcceptanceService {
             return null;
         }
         return value.length() <= max ? value : value.substring(0, max);
+    }
+
+    /**
+     * Adds {@code bill_to_*} fields for any billing values that are present.
+     * Fields are only added (and therefore signed) when non-blank so we never
+     * submit empty values that could themselves trigger reason code 101.
+     */
+    private void addBillingFields(Map<String, String> fields, CheckoutBillingDto billTo) {
+        if (billTo == null) {
+            return;
+        }
+        putIfPresent(fields, "bill_to_forename", billTo.firstName());
+        putIfPresent(fields, "bill_to_surname", billTo.lastName());
+        putIfPresent(fields, "bill_to_email", billTo.email());
+        putIfPresent(fields, "bill_to_address_line1", billTo.address1());
+        putIfPresent(fields, "bill_to_address_line2", billTo.address2());
+        putIfPresent(fields, "bill_to_address_city", billTo.city());
+        putIfPresent(fields, "bill_to_address_state", billTo.state());
+        putIfPresent(fields, "bill_to_address_postal_code", billTo.postalCode());
+        putIfPresent(fields, "bill_to_address_country", billTo.country());
+        putIfPresent(fields, "bill_to_phone", billTo.phone());
+    }
+
+    private static void putIfPresent(Map<String, String> fields, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            fields.put(key, value);
+        }
+    }
+
+    /**
+     * Collects consecutive indexed response fields such as
+     * {@code missingField_0, missingField_1, ...} into an ordered list.
+     */
+    private static List<String> collectIndexedFields(Map<String, String> params, String prefix) {
+        List<String> result = new ArrayList<>();
+        for (int i = 0; params.containsKey(prefix + i); i++) {
+            String value = params.get(prefix + i);
+            if (value != null && !value.isBlank()) {
+                result.add(value);
+            }
+        }
+        return result;
+    }
+
+    private static String buildProviderReason(String reasonCode, String message,
+                                              List<String> missingFields, List<String> invalidFields) {
+        StringBuilder sb = new StringBuilder();
+        if (reasonCode != null && !reasonCode.isBlank()) {
+            sb.append("reasonCode=").append(reasonCode);
+        }
+        if (message != null && !message.isBlank()) {
+            appendSeparator(sb).append(message);
+        }
+        if (!missingFields.isEmpty()) {
+            appendSeparator(sb).append("missing: ").append(String.join(", ", missingFields));
+        }
+        if (!invalidFields.isEmpty()) {
+            appendSeparator(sb).append("invalid: ").append(String.join(", ", invalidFields));
+        }
+        return sb.isEmpty() ? null : sb.toString();
+    }
+
+    private static StringBuilder appendSeparator(StringBuilder sb) {
+        if (!sb.isEmpty()) {
+            sb.append(" | ");
+        }
+        return sb;
     }
 }

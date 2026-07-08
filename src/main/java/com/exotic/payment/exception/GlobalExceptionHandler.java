@@ -34,14 +34,25 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PaymentProcessingException.class)
     public ResponseEntity<Map<String, Object>> handlePayment(PaymentProcessingException ex) {
-        Map<String, Object> body = baseBody(HttpStatus.BAD_GATEWAY, ex.getMessage());
+        // Field-level errors (e.g. reason code 101 - MISSING_FIELD) are a client
+        // problem, so surface them as 400 with the offending fields listed.
+        boolean isFieldProblem = !ex.getFieldErrors().isEmpty();
+        HttpStatus status = isFieldProblem ? HttpStatus.BAD_REQUEST : HttpStatus.BAD_GATEWAY;
+
+        Map<String, Object> body = baseBody(status, ex.getMessage());
+        if (ex.getProviderReason() != null) {
+            body.put("providerReason", ex.getProviderReason());
+        }
+        if (isFieldProblem) {
+            body.put("invalidFields", ex.getFieldErrors());
+        }
         if (ex.getProviderHttpStatus() > 0) {
             body.put("providerHttpStatus", ex.getProviderHttpStatus());
         }
         if (ex.getProviderBody() != null) {
             body.put("providerBody", ex.getProviderBody());
         }
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
+        return ResponseEntity.status(status).body(body);
     }
 
     @ExceptionHandler(Exception.class)

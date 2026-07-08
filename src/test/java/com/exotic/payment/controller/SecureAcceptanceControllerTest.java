@@ -46,7 +46,7 @@ class SecureAcceptanceControllerTest {
         SecureAcceptanceProperties properties() {
             return new SecureAcceptanceProperties("profile", "access", "secret",
                     "https://testsecureacceptance.cybersource.com/pay",
-                    "http://localhost:4200/checkout/result", "en", "USD");
+                    "http://localhost:4200/checkout/result", "en", "LKR", null);
         }
     }
 
@@ -58,7 +58,12 @@ class SecureAcceptanceControllerTest {
 
         mockMvc.perform(post("/api/v1/secure-acceptance/checkout")
                         .contentType("application/json")
-                        .content("{\"referenceCode\":\"order-1001\",\"amount\":102.21,\"currency\":\"USD\"}"))
+                        .content("""
+                                {"referenceCode":"order-1001","amount":10000.00,"currency":"LKR",
+                                "billTo":{"firstName":"John","lastName":"Doe","email":"test@cybs.com",
+                                "address1":"1 Market St","address2":"Suite 100","city":"SF","state":"CA",
+                                "postalCode":"94105","country":"US","phone":"4158880000"}}
+                                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.action").value("https://testsecureacceptance.cybersource.com/pay"))
                 .andExpect(jsonPath("$.fields.signature").value("sig123"));
@@ -94,7 +99,7 @@ class SecureAcceptanceControllerTest {
         tx.setTransactionType(TransactionType.SECURE_ACCEPTANCE);
         tx.setStatus(PaymentStatus.CAPTURED);
         tx.setAmount(new BigDecimal("102.21"));
-        tx.setCurrency("USD");
+        tx.setCurrency("LKR");
         when(service.findLatestByReference(eq("order-1001"))).thenReturn(tx);
 
         mockMvc.perform(get("/api/v1/secure-acceptance/result").param("referenceCode", "order-1001"))

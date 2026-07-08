@@ -1,0 +1,34 @@
+- main [ref=f9e3]:
+  - heading "Payment Acceptance - Review (Step 3 of 4)" [level=1] [ref=f9e4]
+  - generic [ref=f9e5]:
+    - generic [ref=f9e6]:
+      - paragraph [ref=f9e8]: Billing
+      - paragraph [ref=f9e10]: Payment
+      - paragraph [ref=f9e12]: Review
+      - paragraph [ref=f9e14]: Receipt
+    - generic [ref=f9e15]:
+      - heading "Review your Order" [level=2] [ref=f9e16]
+      - alert [ref=f9e17]:
+        - paragraph [ref=f9e18]: Your order was declined. Please verify your information.
+      - generic [ref=f9e20]:
+        - generic [ref=f9e21]:
+          - heading "Payment Details" [level=3] [ref=f9e23]
+          - generic [ref=f9e24]:
+            - paragraph [ref=f9e25]: Card Type
+            - paragraph [ref=f9e26]: Visa
+          - generic [ref=f9e27]:
+            - paragraph [ref=f9e28]: Card Number
+            - paragraph [ref=f9e29]: xxxxxxxxxxxx1111
+          - generic [ref=f9e30]:
+            - paragraph [ref=f9e31]: Expiration Date
+            - paragraph [ref=f9e32]: 01-2027
+        - generic [ref=f9e33]:
+          - heading "Your Order" [level=3] [ref=f9e35]
+          - generic [ref=f9e36]:
+            - paragraph [ref=f9e37]: Total amount
+            - paragraph [ref=f9e38]: $102.21
+      - generic [ref=f9e39]:
+        - button "Back" [ref=f9e40] [cursor=pointer]
+        - generic [ref=f9e41]:
+          - button "Pay" [ref=f9e42] [cursor=pointer]
+          - button "Cancel Order" [ref=f9e44] [cursor=pointer]

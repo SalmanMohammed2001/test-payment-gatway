@@ -28,6 +28,10 @@ const HEADLINE: Record<Tone, string> = {
 export default function ResultPage() {
   const [params] = useSearchParams();
   const ref = params.get('ref');
+  const statusFromUrl = params.get('status');
+  const messageFromUrl = params.get('message');
+  const decisionFromUrl = params.get('decision');
+
   const [result, setResult] = useState<TransactionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,24 +50,42 @@ export default function ResultPage() {
       .finally(() => setLoading(false));
   }, [ref]);
 
-  const tone = result ? toneFor(result.status) : 'failed';
+  const displayStatus = result?.status ?? statusFromUrl ?? 'UNKNOWN';
+  const tone = toneFor(displayStatus);
+  const displayMessage = result?.providerReason ?? messageFromUrl;
+  const displayDecision = result?.providerStatus ?? decisionFromUrl;
 
   return (
     <div className="page">
       <div className="card">
-        {loading && <p className="muted">Loading your payment result…</p>}
+        {loading && (
+          <>
+            {statusFromUrl && (
+              <div className={`status-badge ${toneFor(statusFromUrl)}`}>{statusFromUrl}</div>
+            )}
+            <p className="muted">Loading your payment result…</p>
+            {messageFromUrl && <div className="alert error">{messageFromUrl}</div>}
+          </>
+        )}
 
         {!loading && error && (
           <>
-            <div className={`status-badge failed`}>Error</div>
+            <div className="status-badge failed">Error</div>
             <h1>Couldn't load result</h1>
             <div className="alert error">{error}</div>
+            {messageFromUrl && <div className="alert error">{messageFromUrl}</div>}
+            {statusFromUrl && (
+              <p className="muted">
+                CyberSource status: <strong>{statusFromUrl}</strong>
+                {decisionFromUrl ? ` (${decisionFromUrl})` : ''}
+              </p>
+            )}
           </>
         )}
 
         {!loading && result && (
           <>
-            <div className={`status-badge ${tone}`}>{result.status}</div>
+            <div className={`status-badge ${tone}`}>{displayStatus}</div>
             <h1>{HEADLINE[tone]}</h1>
 
             <dl className="details">
@@ -83,12 +105,12 @@ export default function ResultPage() {
               </div>
               <div>
                 <dt>Provider decision</dt>
-                <dd>{result.providerStatus ?? '—'}</dd>
+                <dd>{displayDecision ?? '—'}</dd>
               </div>
-              {result.providerReason && (
+              {displayMessage && (
                 <div>
                   <dt>Message</dt>
-                  <dd>{result.providerReason}</dd>
+                  <dd>{displayMessage}</dd>
                 </div>
               )}
             </dl>

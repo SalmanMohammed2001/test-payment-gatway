@@ -1,6 +1,7 @@
 package com.exotic.payment.controller;
 
 import com.exotic.payment.dto.CaptureRequest;
+import com.exotic.payment.dto.CyberSourcePaymentRequest;
 import com.exotic.payment.dto.PaymentRequest;
 import com.exotic.payment.dto.PaymentResponse;
 import com.exotic.payment.dto.RefundRequest;
@@ -29,6 +30,18 @@ public class PaymentController {
 
     @PostMapping
     public ResponseEntity<PaymentResponse> charge(@Valid @RequestBody PaymentRequest request) {
+        PaymentResponse response = PaymentResponse.from(paymentService.charge(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Accepts the native CyberSource "Process a Payment" request structure
+     * ({@code clientReferenceInformation} / {@code paymentInformation} /
+     * {@code orderInformation}) and forwards it to CyberSource.
+     */
+    @PostMapping("/cybersource")
+    public ResponseEntity<PaymentResponse> chargeNative(
+            @Valid @RequestBody CyberSourcePaymentRequest request) {
         PaymentResponse response = PaymentResponse.from(paymentService.charge(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

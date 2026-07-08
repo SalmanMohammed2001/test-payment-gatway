@@ -29,15 +29,24 @@ public class SecureAcceptanceSignatureService {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
-    private final SecretKeySpec signingKey;
+    private final SecureAcceptanceProperties properties;
 
     public SecureAcceptanceSignatureService(SecureAcceptanceProperties properties) {
+        this.properties = properties;
+    }
+
+    /**
+     * Builds the signing key on demand. Validation happens here — not in the
+     * constructor — so the application still boots when only the REST flow is
+     * configured; a missing secret only fails calls that actually sign/verify.
+     */
+    private SecretKeySpec signingKey() {
         String secret = properties.secretKey();
         if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException(
+            throw new PaymentProcessingException(
                     "secure-acceptance.secret-key is not configured (set SA_SECRET_KEY)");
         }
-        this.signingKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM);
+        return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM);
     }
 
     /**
@@ -79,7 +88,7 @@ public class SecureAcceptanceSignatureService {
     private String mac(String data) {
         try {
             Mac mac = Mac.getInstance(HMAC_ALGORITHM);
-            mac.init(signingKey);
+            mac.init(signingKey());
             byte[] digest = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(digest);
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {

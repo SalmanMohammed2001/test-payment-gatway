@@ -37,6 +37,24 @@ Generate the REST key id/secret in the CyberSource Business Center under
 
 The schema is auto-created (`createDatabaseIfNotExist=true` + Hibernate `ddl-auto=update`).
 
+## Secure Acceptance (hosted checkout)
+
+Frontend + backend flow for CyberSource Hosted Checkout.
+
+```bash
+./run.sh
+# Checkout: http://localhost:4200/checkout
+```
+
+**Profile setup:** see [PROFILE_SETUP.md](PROFILE_SETUP.md) — includes promote profile, disable hosted billing step, CVN, and response URLs.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /api/v1/secure-acceptance/checkout` | Returns signed fields (includes `bill_to_*`) |
+| `POST /api/v1/secure-acceptance/response` | CyberSource POST-back (configure in Business Center) |
+| `POST /api/cybersource/webhook` | Alias for the same POST-back handler |
+| `GET /api/v1/secure-acceptance/setup?publicBaseUrl=...` | URLs to paste into Business Center |
+
 ## Run
 
 ```bash

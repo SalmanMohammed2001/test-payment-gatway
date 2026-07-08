@@ -17,10 +17,28 @@ export interface TransactionResult {
   currency: string | null;
 }
 
+/** Matches CyberSource Billing Information fields. */
+export interface BillingInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  state?: string;
+  postalCode: string;
+  country: string;
+  phone: string;
+}
+
+/** Only currency supported by this integration. */
+export const SUPPORTED_CURRENCY = 'LKR' as const;
+
 export interface CheckoutRequest {
   referenceCode: string;
   amount: number;
-  currency: string;
+  currency: typeof SUPPORTED_CURRENCY;
+  billTo: BillingInfo;
 }
 
 async function parseError(res: Response): Promise<string> {

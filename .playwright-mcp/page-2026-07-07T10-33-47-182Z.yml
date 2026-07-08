@@ -1,0 +1,27 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - text: Exotic Holiday
+    - heading "Secure checkout" [level=1] [ref=e6]
+    - paragraph [ref=e7]: You'll be taken to CyberSource's secure page to enter your card. Your card details never touch our servers.
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]: Reference
+      - textbox "Reference" [ref=e11]:
+        - /placeholder: order-1001
+        - text: order-3060
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: Amount
+        - spinbutton "Amount" [ref=e15]: "102.21"
+      - generic [ref=e16]:
+        - generic [ref=e17]: Currency
+        - combobox "Currency" [ref=e18]:
+          - option "USD" [selected]
+          - option "EUR"
+          - option "GBP"
+          - option "INR"
+          - option "AUD"
+    - button "Pay 102.21 USD" [ref=e19] [cursor=pointer]
+  - paragraph [ref=e20]:
+    - text: Sandbox mode · test card
+    - code [ref=e21]: 4111 1111 1111 1111

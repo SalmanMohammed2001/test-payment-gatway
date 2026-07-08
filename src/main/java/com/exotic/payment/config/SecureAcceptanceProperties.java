@@ -1,14 +1,11 @@
 package com.exotic.payment.config;
 
+import com.exotic.payment.dto.CheckoutBillingDto;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Binds the {@code secure-acceptance.*} settings used by the CyberSource
  * Secure Acceptance (Hosted Checkout) integration.
- *
- * <p>These come from a Secure Acceptance profile in the Business Center and are
- * entirely separate from the REST {@link CyberSourceProperties}. The
- * {@code secretKey} is a signing credential and must never be logged.
  */
 @ConfigurationProperties(prefix = "secure-acceptance")
 public record SecureAcceptanceProperties(
@@ -18,7 +15,8 @@ public record SecureAcceptanceProperties(
         String payUrl,
         String frontendResultUrl,
         String locale,
-        String defaultCurrency
+        String defaultCurrency,
+        CheckoutBillingDto defaultBilling
 ) {
     public SecureAcceptanceProperties {
         if (payUrl == null || payUrl.isBlank()) {
@@ -31,7 +29,18 @@ public record SecureAcceptanceProperties(
             locale = "en";
         }
         if (defaultCurrency == null || defaultCurrency.isBlank()) {
-            defaultCurrency = "USD";
+            defaultCurrency = "LKR";
         }
+    }
+
+    /** Fallback billing used when the checkout request omits {@code billTo}. */
+    public CheckoutBillingDto resolvedDefaultBilling() {
+        if (defaultBilling == null) {
+            return new CheckoutBillingDto(
+                    "John", "Doe", "test@cybs.com",
+                    "1 Market St", "Suite 100", "San Francisco", "CA",
+                    "94105", "US", "4158880000");
+        }
+        return defaultBilling;
     }
 }

@@ -12,38 +12,49 @@ spring:
     open-in-view: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
     show-sql: false
 
 server:
   port: ${SERVER_PORT:8080}
 
-# CyberSource REST API credentials (HTTP Signature authentication).
-# Provide these via environment variables; never commit real secrets.
+# CyberSource REST API (HTTP Signature).
 cybersource:
   authentication-type: http_signature
-  merchant-id: ${CYBS_MERCHANT_ID:}
-  merchant-key-id: ${CYBS_MERCHANT_KEY_ID:}
-  merchant-secret-key: ${CYBS_MERCHANT_SECRET_KEY:}
-  # Sandbox: apitest.cybersource.com | Production: api.cybersource.com
+  merchant-id: ${CYBS_MERCHANT_ID:999999000246001}
+  merchant-key-id: ${CYBS_MERCHANT_KEY_ID:73c61f35-d97c-4f57-aceb-f4ecac238a96}
+  merchant-secret-key: ${CYBS_MERCHANT_SECRET_KEY:/pSueTOLcPeRoU1Unb/GKYqiQcIW6xYGhnbezhWpEMQ=}
   run-environment: ${CYBS_RUN_ENVIRONMENT:apitest.cybersource.com}
   enable-log: ${CYBS_ENABLE_LOG:false}
-  default-currency: ${CYBS_DEFAULT_CURRENCY:USD}
+  default-currency: ${CYBS_DEFAULT_CURRENCY:LKR}
+  retry:
+    max-attempts: 3
+    initial-backoff: 500
+    max-backoff: 4000
 
-# CyberSource Secure Acceptance — Hosted Checkout (form POST + HMAC signature).
-# Distinct from the REST credentials above; sourced from a Secure Acceptance profile.
+np
+
+# Secure Acceptance — Hosted Checkout (must match Business Center → Security tab).
 secure-acceptance:
-  profile-id: ${SA_PROFILE_ID:}
-  access-key: ${SA_ACCESS_KEY:}
-  secret-key: ${SA_SECRET_KEY:}
-  # Sandbox: https://testsecureacceptance.cybersource.com/pay
-  # Production: https://secureacceptance.cybersource.com/pay
+  profile-id: ${SA_PROFILE_ID:36111A12-9725-45E8-B895-BA48CF15AA9E}
+  access-key: ${SA_ACCESS_KEY:f143c9b5bd8737ceb82861e4be779a04}
+  secret-key: ${SA_SECRET_KEY:a3280354ff644207b61b12aa19cee9fc783c41d849734f0fb2043d3f5708758dac342b01f8b04c06b32428ffa677fc18ce52b9f2768c404a85538b8107fe98367d171010d93349608dd0ede3f2293758383f6a91ee094d679ac0337e3ec97f0b9caa4ba313b44d5bbb5b837f3db9f3c5ea44ff0535d04542987a26c594a22107}
   pay-url: ${SA_PAY_URL:https://testsecureacceptance.cybersource.com/pay}
-  # Where the customer's browser is sent after the response is processed.
   frontend-result-url: ${SA_FRONTEND_RESULT_URL:http://localhost:4200/checkout/result}
   locale: ${SA_LOCALE:en}
-  default-currency: ${SA_DEFAULT_CURRENCY:USD}
+  default-currency: ${SA_DEFAULT_CURRENCY:LKR}
+  # Sent as bill_to_* when checkout request omits billTo (avoids reason 101).
+  default-billing:
+    first-name: John
+    last-name: Doe
+    email: test@cybs.com
+    address1: 1 Market St
+    address2: Suite 100
+    city: San Francisco
+    state: CA
+    postal-code: 94105
+    country: US
+    phone: "4158880000"
 
 logging:
   level:

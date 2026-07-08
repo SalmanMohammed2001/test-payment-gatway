@@ -1,0 +1,20 @@
+- main [ref=f6e3]:
+  - heading "Payment Acceptance - Billing Information (Step 1 of 4)" [level=1] [ref=f6e4]
+  - generic [ref=f6e5]:
+    - generic [ref=f6e6]:
+      - paragraph [ref=f6e8]: Billing
+      - paragraph [ref=f6e10]: Payment
+      - paragraph [ref=f6e12]: Review
+      - paragraph [ref=f6e14]: Receipt
+    - generic [ref=f6e15]:
+      - heading "Billing Information" [level=2] [ref=f6e16]
+      - generic [ref=f6e17]:
+        - group "Billing Information" [ref=f6e18]:
+          - generic [ref=f6e19]: Billing Information
+        - button "Next" [ref=f6e23] [cursor=pointer]
+        - button "Cancel Order" [ref=f6e25] [cursor=pointer]
+    - generic [ref=f6e26]:
+      - heading "Your Order" [level=2] [ref=f6e28]
+      - generic [ref=f6e30]:
+        - paragraph [ref=f6e31]: Total amount
+        - paragraph [ref=f6e32]: $10.00
