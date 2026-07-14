@@ -54,7 +54,7 @@ public class PaymentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/{cybersourceId}/refunds")
+    @PostMapping("/{cybersourceId}/refundss")
     public ResponseEntity<PaymentResponse> refund(@PathVariable String cybersourceId,
                                                   @Valid @RequestBody RefundRequest request) {
         PaymentResponse response =
