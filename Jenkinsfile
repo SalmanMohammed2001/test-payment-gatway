@@ -6,11 +6,15 @@ pipeline {
     }
 
     stages {
-        stage('Test') {
+        stage('Checkout') {
             steps {
-                sh 'npm ci'
-                sh 'npm test'
+                git branch: 'staging',
+                url: 'https://github.com/SalmanMohammed2001/test-payment-gatway.git',
+                credentialsId: 'github-creds'
             }
         }
+
+
+
     }
 }
